@@ -6,7 +6,19 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/SampleScene.unity
+    path: Assets/Scenes/Bootstrap Hallway.unity
+    guid: f3c1d739d2fa0e943bb9a650f6793938
+  - enabled: 1
+    path: Assets/Scenes/TemplateRoom.unity
     guid: 99c9720ab356a0642a771bea13969a05
+  - enabled: 1
+    path: Assets/Scenes/AnomalyRoom1.unity
+    guid: 96f76896661d50148894c8fe69ba5fa1
+  - enabled: 1
+    path: Assets/Scenes/AnomalyRoom2.unity
+    guid: c9cab4275c79d3344ad32d0e6548fd2a
+  - enabled: 1
+    path: Assets/Scenes/AnomalyRoom3.unity
+    guid: ce7ae33f4b925b44aae825fbd5f85e67
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
