@@ -49,14 +49,12 @@ MonoBehaviour:
   - AnomalyRoom1
   - AnomalyRoom2
   - AnomalyRoom3
-  anomalyChance: 0.7
+  - AnomalyRoom4
+  anomalyChance: 0.9
   initialRoomSceneName: TemplateRoom
   northWestRoomMountPoint: {fileID: 0}
   southEastRoomMountPoint: {fileID: 0}
-  startupEntrySide: 1
-  persistAcrossSceneLoads: 1
-  loadInitialRoomOnStart: 1
-  disableInputDuringTransition: 0
-  requireMainRoomArmingBeforeChoices: 1
-  requirePreloadZonesForSeamlessTransition: 1
-  logValidationWarnings: 1
+  preloadZoneFrame: {fileID: 0}
+  logValidationWarnings: 0
+  warnOnOppositeSeamMismatch: 0
+  logChoiceCounterDiagnostics: 1
