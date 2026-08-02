@@ -107,19 +107,5 @@ public class HallwaySymmetryTransportTrigger : MonoBehaviour
     private static Transform ResolvePlayerTransform(Collider other)
     {
         return other.transform;
-
-        FirstPersonController firstPersonController = other.GetComponentInParent<FirstPersonController>();
-        if (firstPersonController != null)
-        {
-            return firstPersonController.transform;
-        }
-
-        CharacterController characterController = other.GetComponentInParent<CharacterController>();
-        if (characterController != null)
-        {
-            return characterController.transform;
-        }
-
-        return null;
     }
 }

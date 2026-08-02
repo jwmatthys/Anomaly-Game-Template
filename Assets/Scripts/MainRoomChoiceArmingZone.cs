@@ -24,7 +24,6 @@ public class MainRoomChoiceArmingZone : MonoBehaviour
         AnomalyLoopManager manager = loopManager != null ? loopManager : AnomalyLoopManager.Instance;
         if (manager == null)
         {
-            Debug.LogWarning("MainRoomChoiceArmingZone could not find AnomalyLoopManager in scene.", this);
             return;
         }
 

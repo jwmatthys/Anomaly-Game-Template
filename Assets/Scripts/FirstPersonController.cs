@@ -101,8 +101,6 @@ namespace StarterAssets
 			_input = GetComponent<StarterAssetsInputs>();
 #if ENABLE_INPUT_SYSTEM
 			_playerInput = GetComponent<PlayerInput>();
-#else
-			Debug.LogError( "Starter Assets package is missing dependencies. Please use Tools/Starter Assets/Reinstall Dependencies to fix it");
 #endif
 
 			// reset our timeouts on start
@@ -262,14 +260,6 @@ namespace StarterAssets
 			transform.SetPositionAndRotation(position, rotation);
 			_speed = 0.0f;
 			_verticalVelocity = 0.0f;
-
-			if (_input != null)
-			{
-				_input.MoveInput(Vector2.zero);
-				_input.LookInput(Vector2.zero);
-				_input.JumpInput(false);
-				_input.SprintInput(false);
-			}
 
 			if (controllerWasEnabled)
 			{

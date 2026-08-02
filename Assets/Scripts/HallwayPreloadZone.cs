@@ -24,7 +24,6 @@ public class HallwayPreloadZone : MonoBehaviour
         AnomalyLoopManager manager = loopManager != null ? loopManager : AnomalyLoopManager.Instance;
         if (manager == null)
         {
-            Debug.LogWarning("HallwayPreloadZone could not find AnomalyLoopManager in scene.", this);
             return;
         }
 

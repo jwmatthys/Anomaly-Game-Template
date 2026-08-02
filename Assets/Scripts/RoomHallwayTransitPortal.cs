@@ -8,12 +8,8 @@ public class RoomHallwayTransitPortal : MonoBehaviour
     [Header("Destination")]
     [SerializeField] private Transform transitDestination;
 
-    [Header("Debug")]
-    [SerializeField] private bool logTeleportDiagnostics = true;
-
     [SerializeField] private bool useTagCheck;
     [SerializeField] private string playerTag = "Player";
-    [SerializeField] private float reentryCooldownSeconds = 0.2f;
 
     private static readonly Dictionary<Transform, float> LastTeleportTimesByTransform = new();
 
@@ -33,7 +29,6 @@ public class RoomHallwayTransitPortal : MonoBehaviour
         AnomalyLoopManager manager = AnomalyLoopManager.Instance;
         if (manager == null)
         {
-            Debug.LogWarning("RoomHallwayTransitPortal could not find AnomalyLoopManager.", this);
             return;
         }
 
@@ -43,7 +38,6 @@ public class RoomHallwayTransitPortal : MonoBehaviour
 
         if (destinationFrame == null)
         {
-            Debug.LogWarning("RoomHallwayTransitPortal is missing transitDestination.", this);
             return;
         }
 
@@ -53,30 +47,9 @@ public class RoomHallwayTransitPortal : MonoBehaviour
             return;
         }
 
-        if (LastTeleportTimesByTransform.TryGetValue(playerTransform, out float lastTeleportTime))
-        {
-            if (Time.time - lastTeleportTime < reentryCooldownSeconds)
-            {
-                return;
-            }
-        }
-
         Vector3 worldOffsetFromTriggerRoot = playerTransform.position - transform.position;
         Vector3 targetPosition = destinationFrame.position + worldOffsetFromTriggerRoot;
         Quaternion targetRotation = playerTransform.rotation;
-
-        if (logTeleportDiagnostics)
-        {
-            Debug.Log(
-                "RoomHallwayTransitPortal teleport:" +
-                $" source={transform.name} (scene={gameObject.scene.name}, pos={transform.position})" +
-                $" destination={destinationFrame.name} (scene={destinationFrame.gameObject.scene.name}, pos={destinationFrame.position})" +
-                $" worldOffset={worldOffsetFromTriggerRoot}" +
-                $" playerBefore={playerTransform.position}" +
-                $" playerAfter={targetPosition}",
-                this
-            );
-        }
 
         FirstPersonController controller = playerTransform.GetComponent<FirstPersonController>();
         if (controller == null)

@@ -12,16 +12,16 @@ EditorBuildSettings:
     path: Assets/Scenes/TemplateRoom.unity
     guid: 99c9720ab356a0642a771bea13969a05
   - enabled: 1
-    path: Assets/Scenes/AnomalyRoom1.unity
-    guid: 96f76896661d50148894c8fe69ba5fa1
+    path: Assets/Scenes/Anomaly Rooms/AnomalyRoom1.unity
+    guid: d949cc72a83e5704593e42c99bd0faaf
   - enabled: 1
-    path: Assets/Scenes/AnomalyRoom2.unity
-    guid: c9cab4275c79d3344ad32d0e6548fd2a
+    path: Assets/Scenes/Anomaly Rooms/AnomalyRoom2.unity
+    guid: 81e2414e27ecb4f4d925f7f7eac54282
   - enabled: 1
-    path: Assets/Scenes/AnomalyRoom3.unity
-    guid: ce7ae33f4b925b44aae825fbd5f85e67
+    path: Assets/Scenes/Anomaly Rooms/AnomalyRoom3.unity
+    guid: 57c8d08dcfa805247abff5c40d3820a6
   - enabled: 1
-    path: Assets/Scenes/AnomalyRoom4.unity
-    guid: 74e86baeac2ed0d4490f5a1abe93619f
+    path: Assets/Scenes/Anomaly Rooms/AnomalyRoom4.unity
+    guid: 83322d6ffb7c42344978ad1ce70f7572
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

@@ -7,7 +7,6 @@ public class AnomalyDecisionTrigger : MonoBehaviour
     [SerializeField] private HallwayChoice choice = HallwayChoice.NoAnomaly;
     [SerializeField] private AnomalyLoopManager loopManager;
     [SerializeField] private bool requireChoicesToBeArmed = true;
-    [SerializeField] private bool logWarningWhenUnarmed = true;
     [SerializeField] private bool useTagCheck;
     [SerializeField] private string playerTag = "Player";
 
@@ -29,7 +28,6 @@ public class AnomalyDecisionTrigger : MonoBehaviour
         AnomalyLoopManager manager = loopManager != null ? loopManager : AnomalyLoopManager.Instance;
         if (manager == null)
         {
-            Debug.LogWarning("AnomalyDecisionTrigger could not find AnomalyLoopManager in scene.", this);
             return;
         }
 
@@ -38,14 +36,6 @@ public class AnomalyDecisionTrigger : MonoBehaviour
             if (choice == HallwayChoice.NoAnomaly && manager.IsHallwayMirrorTransportArmed)
             {
                 return;
-            }
-
-            if (logWarningWhenUnarmed)
-            {
-                Debug.LogWarning(
-                    $"AnomalyDecisionTrigger ({choice}) on '{name}' in scene '{gameObject.scene.name}' at {transform.position}: ignored because choices are not armed yet. Enter the main room first to arm choices.",
-                    this
-                );
             }
 
             return;

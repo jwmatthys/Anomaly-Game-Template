@@ -5,6 +5,22 @@ using System.Text;
 using StarterAssets;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Debug = SilentDebug;
+
+internal static class SilentDebug
+{
+    public static void Log(object message, UnityEngine.Object context = null)
+    {
+        _ = message;
+        _ = context;
+    }
+
+    public static void LogWarning(object message, UnityEngine.Object context = null)
+    {
+        _ = message;
+        _ = context;
+    }
+}
 
 public enum HallwayChoice
 {
