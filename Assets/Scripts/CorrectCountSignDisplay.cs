@@ -5,6 +5,7 @@ public class CorrectCountSignDisplay : MonoBehaviour
 {
     [SerializeField] private TMP_Text scoreText;
     [SerializeField] private string roomLabel = "ROOM";
+    [SerializeField] private string exitLabel = "EXIT";
 
     private AnomalyLoopManager _boundManager;
 
@@ -61,7 +62,9 @@ public class CorrectCountSignDisplay : MonoBehaviour
 
     private void HandleScoreChanged(int correctCount, int attemptCount)
     {
-        UpdateText(correctCount);
+        _ = correctCount;
+        _ = attemptCount;
+        RefreshFromManager();
     }
 
     private void RefreshFromManager()
@@ -69,6 +72,16 @@ public class CorrectCountSignDisplay : MonoBehaviour
         if (_boundManager == null)
         {
             UpdateText(0);
+            return;
+        }
+
+        bool isEndRoom =
+            !string.IsNullOrWhiteSpace(_boundManager.CurrentRoomSceneName) &&
+            string.Equals(_boundManager.CurrentRoomSceneName, _boundManager.EndRoomSceneName, System.StringComparison.Ordinal);
+
+        if (isEndRoom)
+        {
+            scoreText.text = exitLabel;
             return;
         }
 

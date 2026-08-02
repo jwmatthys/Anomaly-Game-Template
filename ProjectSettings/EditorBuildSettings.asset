@@ -9,6 +9,9 @@ EditorBuildSettings:
     path: Assets/Scenes/Bootstrap Hallway.unity
     guid: f3c1d739d2fa0e943bb9a650f6793938
   - enabled: 1
+    path: Assets/Scenes/Start and End Rooms/Starting Room.unity
+    guid: 17cd89d8e33300e4cbbd8baedfcc0376
+  - enabled: 1
     path: Assets/Scenes/TemplateRoom.unity
     guid: 99c9720ab356a0642a771bea13969a05
   - enabled: 1
@@ -23,5 +26,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Anomaly Rooms/AnomalyRoom4.unity
     guid: 83322d6ffb7c42344978ad1ce70f7572
+  - enabled: 1
+    path: Assets/Scenes/Start and End Rooms/End Room.unity
+    guid: 08a70d64657608047b727d44f3ce36bb
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

@@ -64,12 +64,26 @@ public class AnomalyLoopManager : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float anomalyChance = 0.5f;
     [SerializeField] private string initialRoomSceneName = "TemplateRoom";
 
+    [Header("Win Condition")]
+    [SerializeField, Min(1)] private int winRoomCount = 10;
+    [SerializeField] private string endRoomSceneName = "End Room";
+
     [Header("Room Placement")]
     [SerializeField] private Transform northWestRoomMountPoint;
     [SerializeField] private Transform southEastRoomMountPoint;
 
     [Header("Hallway Frames")]
     [SerializeField] private Transform preloadZoneFrame;
+
+    [Header("Bootstrap Connection")]
+    [SerializeField] private bool loadBootstrapConnectedSceneOnStart = true;
+    [SerializeField] private string bootstrapConnectedSceneName = "Starting Room";
+    [SerializeField] private HallwaySide bootstrapConnectedSceneAnchorSide = HallwaySide.NorthWest;
+    [SerializeField] private HallwaySide bootstrapHallwayMountSide = HallwaySide.SouthEast;
+    [SerializeField] private string bootstrapHallwayMountPointName = "Starting Room Entry Point";
+    [SerializeField] private bool unloadBootstrapConnectedSceneAfterInitialRoomLoad = true;
+    [SerializeField] private string northWestEntryPointName = "NW Entry Point";
+    [SerializeField] private string southEastEntryPointName = "SE Entry Point";
 
     [Header("Validation")]
     [SerializeField] private bool logValidationWarnings = true;
@@ -85,6 +99,7 @@ public class AnomalyLoopManager : MonoBehaviour
     public bool IsTransitionInProgress => _transitionInProgress;
     public string ActiveSceneName => SceneManager.GetActiveScene().name;
     public string CurrentRoomSceneName => _currentRoomSceneName;
+    public string EndRoomSceneName => endRoomSceneName;
     public bool HasPendingLoopAdvance => _pendingLoopAdvance;
     public HallwayChoice? LastSubmittedChoice => _lastSubmittedChoice;
     public bool IsHallwayMirrorTransportArmed => _hallwayMirrorTransportArmed;
@@ -106,6 +121,7 @@ public class AnomalyLoopManager : MonoBehaviour
 
     private RoomLoopSceneContext _currentContext;
     private PreloadedRoom _preloadedRoom;
+    private bool _bootstrapConnectedSceneReady;
 
     private const bool PersistAcrossSceneLoads = true;
     private const bool RequireMainRoomArmingBeforeChoices = true;
@@ -153,6 +169,11 @@ public class AnomalyLoopManager : MonoBehaviour
         AreChoicesArmed = !RequireMainRoomArmingBeforeChoices;
         ValidateStaticSetup();
         PublishScore();
+
+        if (loadBootstrapConnectedSceneOnStart)
+        {
+            StartCoroutine(EnsureBootstrapConnectedSceneLoadedRoutine());
+        }
     }
 
     public void SubmitChoice(HallwayChoice choice)
@@ -353,6 +374,11 @@ public class AnomalyLoopManager : MonoBehaviour
         ResolveRoomContextBySceneName(_currentRoomSceneName);
         AlignRoomSceneToHallwayMount(_currentRoomSceneName);
         ValidateCurrentRoomSetup();
+
+        if (unloadBootstrapConnectedSceneAfterInitialRoomLoad)
+        {
+            yield return StartCoroutine(TryUnloadBootstrapConnectedSceneRoutine(_currentRoomSceneName));
+        }
 
         _transitionInProgress = false;
         _processingMidHallwayZone = false;
@@ -568,6 +594,219 @@ public class AnomalyLoopManager : MonoBehaviour
         }
     }
 
+    private IEnumerator EnsureBootstrapConnectedSceneLoadedRoutine()
+    {
+        if (_bootstrapConnectedSceneReady)
+        {
+            yield break;
+        }
+
+        string sceneName = bootstrapConnectedSceneName;
+        if (string.IsNullOrWhiteSpace(sceneName) || string.Equals(sceneName, _bootstrapSceneName, StringComparison.Ordinal))
+        {
+            yield break;
+        }
+
+        if (!IsSceneLoadable(sceneName))
+        {
+            if (logValidationWarnings)
+            {
+                Debug.LogWarning($"AnomalyLoopManager: Bootstrap connected scene '{sceneName}' is not in Build Settings.", this);
+            }
+
+            yield break;
+        }
+
+        Scene scene = SceneManager.GetSceneByName(sceneName);
+        if (!scene.IsValid() || !scene.isLoaded)
+        {
+            AsyncOperation loadOperation = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
+            while (loadOperation != null && !loadOperation.isDone)
+            {
+                yield return null;
+            }
+        }
+
+        AlignSceneAnchorToHallwayMount(sceneName, bootstrapConnectedSceneAnchorSide, ResolveBootstrapHallwayMountPoint());
+        _bootstrapConnectedSceneReady = true;
+    }
+
+    private IEnumerator TryUnloadBootstrapConnectedSceneRoutine(string loadedRoomSceneName)
+    {
+        string sceneName = bootstrapConnectedSceneName;
+        if (string.IsNullOrWhiteSpace(sceneName))
+        {
+            yield break;
+        }
+
+        if (string.Equals(sceneName, loadedRoomSceneName, StringComparison.Ordinal))
+        {
+            yield break;
+        }
+
+        Scene scene = SceneManager.GetSceneByName(sceneName);
+        if (!scene.IsValid() || !scene.isLoaded)
+        {
+            yield break;
+        }
+
+        AsyncOperation unloadOperation = SceneManager.UnloadSceneAsync(sceneName);
+        while (unloadOperation != null && !unloadOperation.isDone)
+        {
+            yield return null;
+        }
+
+        _bootstrapConnectedSceneReady = false;
+    }
+
+    private void AlignSceneAnchorToHallwayMount(string sceneName, HallwaySide sceneAnchorSide, HallwaySide mountSide)
+    {
+        AlignSceneAnchorToHallwayMount(sceneName, sceneAnchorSide, GetHallwayMountPoint(mountSide));
+    }
+
+    private void AlignSceneAnchorToHallwayMount(string sceneName, HallwaySide sceneAnchorSide, Transform mount)
+    {
+        if (string.IsNullOrWhiteSpace(sceneName))
+        {
+            return;
+        }
+
+        Scene scene = SceneManager.GetSceneByName(sceneName);
+        if (!scene.IsValid() || !scene.isLoaded)
+        {
+            return;
+        }
+
+        Transform sceneAnchor = FindSceneAnchor(sceneName, sceneAnchorSide);
+        if (mount == null || sceneAnchor == null)
+        {
+            if (logValidationWarnings)
+            {
+                Debug.LogWarning(
+                    $"AnomalyLoopManager: Could not align scene '{sceneName}' because a hallway mount or scene entry anchor is missing.",
+                    this
+                );
+            }
+
+            return;
+        }
+
+        Vector3 positionOffset = mount.position - sceneAnchor.position;
+        positionOffset.y = 0f;
+
+        GameObject[] roots = scene.GetRootGameObjects();
+        for (int i = 0; i < roots.Length; i++)
+        {
+            roots[i].transform.position += positionOffset;
+        }
+    }
+
+    private Transform ResolveBootstrapHallwayMountPoint()
+    {
+        if (!string.IsNullOrWhiteSpace(bootstrapHallwayMountPointName))
+        {
+            Transform namedMount = FindTransformInSceneByName(_bootstrapSceneName, bootstrapHallwayMountPointName);
+            if (namedMount != null)
+            {
+                return namedMount;
+            }
+        }
+
+        return GetHallwayMountPoint(bootstrapHallwayMountSide);
+    }
+
+    private Transform GetHallwayMountPoint(HallwaySide side)
+    {
+        return side == HallwaySide.NorthWest ? northWestRoomMountPoint : southEastRoomMountPoint;
+    }
+
+    private Transform FindSceneAnchor(string sceneName, HallwaySide side)
+    {
+        RoomLoopSceneContext context = FindSceneContext(sceneName);
+        if (context != null)
+        {
+            Transform contextAnchor = context.GetConnectionAnchor(side);
+            if (contextAnchor != null)
+            {
+                return contextAnchor;
+            }
+        }
+
+        string fallbackAnchorName = side == HallwaySide.NorthWest ? northWestEntryPointName : southEastEntryPointName;
+        if (string.IsNullOrWhiteSpace(fallbackAnchorName))
+        {
+            return null;
+        }
+
+        Scene scene = SceneManager.GetSceneByName(sceneName);
+        if (!scene.IsValid() || !scene.isLoaded)
+        {
+            return null;
+        }
+
+        GameObject[] roots = scene.GetRootGameObjects();
+        for (int i = 0; i < roots.Length; i++)
+        {
+            Transform matched = FindChildByNameRecursive(roots[i].transform, fallbackAnchorName);
+            if (matched != null)
+            {
+                return matched;
+            }
+        }
+
+        return null;
+    }
+
+    private static Transform FindChildByNameRecursive(Transform root, string targetName)
+    {
+        if (root == null)
+        {
+            return null;
+        }
+
+        if (string.Equals(root.name, targetName, StringComparison.OrdinalIgnoreCase))
+        {
+            return root;
+        }
+
+        for (int i = 0; i < root.childCount; i++)
+        {
+            Transform match = FindChildByNameRecursive(root.GetChild(i), targetName);
+            if (match != null)
+            {
+                return match;
+            }
+        }
+
+        return null;
+    }
+
+    private static Transform FindTransformInSceneByName(string sceneName, string targetName)
+    {
+        if (string.IsNullOrWhiteSpace(sceneName) || string.IsNullOrWhiteSpace(targetName))
+        {
+            return null;
+        }
+
+        Scene scene = SceneManager.GetSceneByName(sceneName);
+        if (!scene.IsValid() || !scene.isLoaded)
+        {
+            return null;
+        }
+
+        GameObject[] roots = scene.GetRootGameObjects();
+        for (int i = 0; i < roots.Length; i++)
+        {
+            Transform matched = FindChildByNameRecursive(roots[i].transform, targetName);
+            if (matched != null)
+            {
+                return matched;
+            }
+        }
+
+        return null;
+    }
+
     private void AlignRoomSceneToHallwayMount(string sceneName)
     {
         if (string.IsNullOrWhiteSpace(sceneName))
@@ -588,32 +827,38 @@ public class AnomalyLoopManager : MonoBehaviour
         }
 
         RoomLoopSceneContext context = FindSceneContext(sceneName);
-        if (context == null)
-        {
-            if (logValidationWarnings)
-            {
-                Debug.LogWarning($"AnomalyLoopManager: Room scene '{sceneName}' has no RoomLoopSceneContext for alignment.", this);
-            }
-
-            return;
-        }
+        bool isEndRoomScene = string.Equals(sceneName, endRoomSceneName, StringComparison.Ordinal);
 
         // Cross-connection mapping:
         // NW hallway mount <-> SE room anchor
         // SE hallway mount <-> NW room anchor
-        Transform roomNorthWestAnchor = context.GetConnectionAnchor(HallwaySide.NorthWest);
-        Transform roomSouthEastAnchor = context.GetConnectionAnchor(HallwaySide.SouthEast);
-        if (roomNorthWestAnchor == null || roomSouthEastAnchor == null)
+        Transform roomNorthWestAnchor = FindSceneAnchor(sceneName, HallwaySide.NorthWest);
+        Transform roomSouthEastAnchor = isEndRoomScene
+            ? FindTransformInSceneByName(sceneName, southEastEntryPointName)
+            : FindSceneAnchor(sceneName, HallwaySide.SouthEast);
+
+        bool hasRequiredAnchors = isEndRoomScene
+            ? roomSouthEastAnchor != null
+            : roomNorthWestAnchor != null && roomSouthEastAnchor != null;
+
+        if (!hasRequiredAnchors)
         {
             if (logValidationWarnings)
             {
-                Debug.LogWarning($"AnomalyLoopManager: Room scene '{sceneName}' is missing one or more connection anchors.", context);
+                string source = context == null ? "RoomLoopSceneContext or named entry points" : "connection anchors";
+                Debug.LogWarning($"AnomalyLoopManager: Room scene '{sceneName}' is missing one or more {source}.", context != null ? context : this);
             }
 
             return;
         }
 
-        Transform targetMount = northWestMount;
+        Transform targetMount = isEndRoomScene
+            ? FindTransformInSceneByName(_bootstrapSceneName, northWestEntryPointName)
+            : northWestMount;
+        if (targetMount == null)
+        {
+            targetMount = northWestMount;
+        }
         Transform targetRoomAnchor = roomSouthEastAnchor;
 
         if (targetMount == null || targetRoomAnchor == null)
@@ -672,6 +917,11 @@ public class AnomalyLoopManager : MonoBehaviour
 
     private string PickNextRoomSceneName()
     {
+        if (ShouldRouteToEndRoom())
+        {
+            return ResolveEndRoomSceneName();
+        }
+
         List<string> validAnomalyScenes = GetValidAnomalySceneNames();
         bool shouldPickAnomaly = validAnomalyScenes.Count > 0 && UnityEngine.Random.value < anomalyChance;
 
@@ -681,6 +931,27 @@ public class AnomalyLoopManager : MonoBehaviour
         }
 
         return PickAnomalySceneName(validAnomalyScenes);
+    }
+
+    private bool ShouldRouteToEndRoom()
+    {
+        // End room appears after the target streak is completed.
+        return CorrectCount > winRoomCount;
+    }
+
+    private string ResolveEndRoomSceneName()
+    {
+        if (IsSceneLoadable(endRoomSceneName))
+        {
+            return endRoomSceneName;
+        }
+
+        if (logValidationWarnings)
+        {
+            Debug.LogWarning($"AnomalyLoopManager: End room scene '{endRoomSceneName}' is not in Build Settings.", this);
+        }
+
+        return ResolveNormalRoomSceneName();
     }
 
     private string PickAnomalySceneName(List<string> validAnomalyScenes)
@@ -709,6 +980,32 @@ public class AnomalyLoopManager : MonoBehaviour
         string selectedScene = candidateScenes[UnityEngine.Random.Range(0, candidateScenes.Count)];
         _lastAnomalySceneName = selectedScene;
         return selectedScene;
+    }
+
+    private void ResetLoopStateForRestart()
+    {
+        CorrectCount = 0;
+        AttemptCount = 0;
+        IsCurrentRoomAnomalous = false;
+        AreChoicesArmed = !RequireMainRoomArmingBeforeChoices;
+
+        _processingMidHallwayZone = false;
+        _pendingLoopAdvance = false;
+        _pendingChoiceWasCorrect = false;
+        _hallwayMirrorTransportArmed = false;
+        _pendingSourceHallway = HallwaySide.NorthWest;
+        _lastSubmittedChoice = null;
+
+        _lastAnomalySceneName = string.Empty;
+        _currentRoomSceneName = string.Empty;
+        _pendingTargetSceneName = string.Empty;
+        _currentContext = null;
+        _preloadedRoom = null;
+        _bootstrapConnectedSceneReady = false;
+
+        preloadZoneFrame = ResolvePreloadZoneFrame();
+        ValidateStaticSetup();
+        PublishScore();
     }
 
     private void ClearPreloadCacheExcept(string keepSceneName)
@@ -828,7 +1125,10 @@ public class AnomalyLoopManager : MonoBehaviour
 
     private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        _ = mode;
+        if (mode == LoadSceneMode.Single && string.Equals(scene.name, _bootstrapSceneName, StringComparison.Ordinal))
+        {
+            ResetLoopStateForRestart();
+        }
 
         if (!string.IsNullOrWhiteSpace(_currentRoomSceneName) && string.Equals(scene.name, _currentRoomSceneName, StringComparison.Ordinal))
         {
@@ -914,6 +1214,27 @@ public class AnomalyLoopManager : MonoBehaviour
             {
                 Debug.LogWarning("AnomalyLoopManager: Assign preloadZoneFrame so room hallway portals can target the bootstrap preload position.", this);
             }
+        }
+
+        if (loadBootstrapConnectedSceneOnStart)
+        {
+            if (string.IsNullOrWhiteSpace(bootstrapConnectedSceneName))
+            {
+                Debug.LogWarning("AnomalyLoopManager: Bootstrap connected scene name is empty.", this);
+            }
+            else if (!IsSceneLoadable(bootstrapConnectedSceneName))
+            {
+                Debug.LogWarning($"AnomalyLoopManager: Bootstrap connected scene '{bootstrapConnectedSceneName}' is not in Build Settings.", this);
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(endRoomSceneName))
+        {
+            Debug.LogWarning("AnomalyLoopManager: End room scene name is empty.", this);
+        }
+        else if (!IsSceneLoadable(endRoomSceneName))
+        {
+            Debug.LogWarning($"AnomalyLoopManager: End room scene '{endRoomSceneName}' is not in Build Settings.", this);
         }
 
     }
@@ -1154,6 +1475,7 @@ public class AnomalyLoopManager : MonoBehaviour
     private void OnValidate()
     {
         anomalyChance = Mathf.Clamp01(anomalyChance);
+        winRoomCount = Mathf.Max(1, winRoomCount);
 
         if (string.IsNullOrWhiteSpace(initialRoomSceneName))
         {
