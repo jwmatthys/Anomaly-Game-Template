@@ -1,16 +1,18 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class PulseScale : MonoBehaviour
 {
-    [SerializeField] private float pulseSpeed = 1f;
-    [SerializeField] private float minScale = 0.5f;
-    [SerializeField] private float maxScale = 1.5f;
+    [FormerlySerializedAs("pulseSpeed")]
+    [SerializeField] private float pulseSpeedHz = 1f;
+    [FormerlySerializedAs("minScale")]
+    [SerializeField] private float minimumScale = 0.5f;
+    [FormerlySerializedAs("maxScale")]
+    [SerializeField] private float maximumScale = 1.5f;
 
-
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
-        float scale = Mathf.Lerp(minScale, maxScale, (Mathf.Sin(Time.time * pulseSpeed) + 1f) / 2f);
-        transform.localScale = new Vector3(scale, scale, scale);        
+        float scale = Mathf.Lerp(minimumScale, maximumScale, (Mathf.Sin(Time.time * pulseSpeedHz) + 1f) / 2f);
+        transform.localScale = new Vector3(scale, scale, scale);
     }
 }

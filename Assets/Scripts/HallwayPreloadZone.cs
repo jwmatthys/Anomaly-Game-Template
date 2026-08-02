@@ -1,12 +1,15 @@
-using StarterAssets;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [RequireComponent(typeof(Collider))]
 public class HallwayPreloadZone : MonoBehaviour
 {
-    [SerializeField] private AnomalyLoopManager loopManager;
-    [SerializeField] private bool useTagCheck;
-    [SerializeField] private string playerTag = "Player";
+    [FormerlySerializedAs("loopManager")]
+    [SerializeField] private AnomalyLoopManager loopManagerOverride;
+    [FormerlySerializedAs("useTagCheck")]
+    [SerializeField] private bool usePlayerTagCheck;
+    [FormerlySerializedAs("playerTag")]
+    [SerializeField] private string playerTagName = "Player";
 
     private void Reset()
     {
@@ -16,32 +19,17 @@ public class HallwayPreloadZone : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (!IsPlayer(other))
+        if (!PlayerTriggerUtility.IsPlayer(other, usePlayerTagCheck, playerTagName))
         {
             return;
         }
 
-        AnomalyLoopManager manager = loopManager != null ? loopManager : AnomalyLoopManager.Instance;
+        AnomalyLoopManager manager = loopManagerOverride != null ? loopManagerOverride : AnomalyLoopManager.Instance;
         if (manager == null)
         {
             return;
         }
 
         manager.EnterBlindSpotZone();
-    }
-
-    private bool IsPlayer(Collider other)
-    {
-        if (useTagCheck)
-        {
-            return other.CompareTag(playerTag);
-        }
-
-        if (other.GetComponentInParent<FirstPersonController>() != null)
-        {
-            return true;
-        }
-
-        return other.GetComponentInParent<CharacterController>() != null;
     }
 }

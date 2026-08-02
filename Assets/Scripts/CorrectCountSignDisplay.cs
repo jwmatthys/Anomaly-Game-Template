@@ -1,40 +1,46 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.Serialization;
 
 public class CorrectCountSignDisplay : MonoBehaviour
 {
-    [SerializeField] private TMP_Text scoreText;
-    [SerializeField] private string roomLabel = "ROOM";
-    [SerializeField] private string exitLabel = "EXIT";
+    [FormerlySerializedAs("scoreText")]
+    [SerializeField] private TMP_Text scoreTextComponent;
+    [FormerlySerializedAs("roomLabel")]
+    [SerializeField] private string roomLabelText = "ROOM";
+    [FormerlySerializedAs("exitLabel")]
+    [SerializeField] private string exitLabelText = "EXIT";
 
     private AnomalyLoopManager _boundManager;
 
     private void Awake()
     {
-        if (scoreText == null)
+        if (scoreTextComponent == null)
         {
-            scoreText = GetComponent<TMP_Text>();
+            scoreTextComponent = GetComponent<TMP_Text>();
         }
     }
 
     private void OnEnable()
     {
+        SceneManager.sceneLoaded += HandleSceneLoaded;
         BindToManager();
         RefreshFromManager();
     }
 
     private void OnDisable()
     {
+        SceneManager.sceneLoaded -= HandleSceneLoaded;
         UnbindFromManager();
     }
 
-    private void Update()
+    private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        if (_boundManager == null && AnomalyLoopManager.Instance != null)
-        {
-            BindToManager();
-            RefreshFromManager();
-        }
+        _ = scene;
+        _ = mode;
+        BindToManager();
+        RefreshFromManager();
     }
 
     private void BindToManager()
@@ -75,13 +81,14 @@ public class CorrectCountSignDisplay : MonoBehaviour
             return;
         }
 
+        // End room intentionally replaces the running counter with a terminal label.
         bool isEndRoom =
             !string.IsNullOrWhiteSpace(_boundManager.CurrentRoomSceneName) &&
             string.Equals(_boundManager.CurrentRoomSceneName, _boundManager.EndRoomSceneName, System.StringComparison.Ordinal);
 
         if (isEndRoom)
         {
-            scoreText.text = exitLabel;
+            scoreTextComponent.text = exitLabelText;
             return;
         }
 
@@ -90,11 +97,11 @@ public class CorrectCountSignDisplay : MonoBehaviour
 
     private void UpdateText(int correctCount)
     {
-        if (scoreText == null)
+        if (scoreTextComponent == null)
         {
             return;
         }
 
-        scoreText.text = roomLabel + "\n" + correctCount.ToString("D2");
+        scoreTextComponent.text = roomLabelText + "\n" + correctCount.ToString("D2");
     }
 }

@@ -1,16 +1,21 @@
-using StarterAssets;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [RequireComponent(typeof(Collider))]
 public class AnomalyDecisionTrigger : MonoBehaviour
 {
-    [SerializeField] private HallwayChoice choice = HallwayChoice.NoAnomaly;
-    [SerializeField] private AnomalyLoopManager loopManager;
-    [SerializeField] private bool requireChoicesToBeArmed = true;
-    [SerializeField] private bool useTagCheck;
-    [SerializeField] private string playerTag = "Player";
+    [FormerlySerializedAs("choice")]
+    [SerializeField] private HallwayChoice decisionChoice = HallwayChoice.NoAnomaly;
+    [FormerlySerializedAs("loopManager")]
+    [SerializeField] private AnomalyLoopManager loopManagerOverride;
+    [FormerlySerializedAs("requireChoicesToBeArmed")]
+    [SerializeField] private bool requireArmedChoices = true;
+    [FormerlySerializedAs("useTagCheck")]
+    [SerializeField] private bool usePlayerTagCheck;
+    [FormerlySerializedAs("playerTag")]
+    [SerializeField] private string playerTagName = "Player";
 
-    public HallwayChoice Choice => choice;
+    public HallwayChoice Choice => decisionChoice;
 
     private void Reset()
     {
@@ -20,43 +25,22 @@ public class AnomalyDecisionTrigger : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (!IsPlayer(other))
+        if (!PlayerTriggerUtility.IsPlayer(other, usePlayerTagCheck, playerTagName))
         {
             return;
         }
 
-        AnomalyLoopManager manager = loopManager != null ? loopManager : AnomalyLoopManager.Instance;
+        AnomalyLoopManager manager = loopManagerOverride != null ? loopManagerOverride : AnomalyLoopManager.Instance;
         if (manager == null)
         {
             return;
         }
 
-        if (requireChoicesToBeArmed && !manager.AreChoicesArmed)
+        if (requireArmedChoices && !manager.AreChoicesArmed)
         {
-            if (choice == HallwayChoice.NoAnomaly && manager.IsHallwayMirrorTransportArmed)
-            {
-                return;
-            }
-
             return;
         }
 
-        manager.SubmitChoice(choice);
+        manager.SubmitChoice(decisionChoice);
     }
-
-    private bool IsPlayer(Collider other)
-    {
-        if (useTagCheck)
-        {
-            return other.CompareTag(playerTag);
-        }
-
-        if (other.GetComponentInParent<FirstPersonController>() != null)
-        {
-            return true;
-        }
-
-        return other.GetComponentInParent<CharacterController>() != null;
-    }
-
 }

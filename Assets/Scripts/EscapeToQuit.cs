@@ -5,6 +5,7 @@ using UnityEngine.InputSystem;
 
 public class EscapeToQuit : MonoBehaviour
 {
+    // Bootstrap globally at runtime so every scene supports Escape without manual wiring.
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void EnsureInstance()
     {
@@ -34,6 +35,7 @@ public class EscapeToQuit : MonoBehaviour
 
     private static bool WasEscapePressed()
     {
+        // Support both input backends so projects can switch systems without code changes.
 #if ENABLE_INPUT_SYSTEM
         if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
         {

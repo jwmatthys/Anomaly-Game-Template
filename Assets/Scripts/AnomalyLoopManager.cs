@@ -126,7 +126,6 @@ public class AnomalyLoopManager : MonoBehaviour
     private const bool PersistAcrossSceneLoads = true;
     private const bool RequireMainRoomArmingBeforeChoices = true;
     private const bool RequirePreloadZonesForSeamlessTransition = true;
-    private const bool DisableInputDuringTransition = false;
     private const int FramesBeforeSceneActivation = 1;
     private const int FramesBeforeOldRoomUnload = 1;
 
@@ -392,6 +391,7 @@ public class AnomalyLoopManager : MonoBehaviour
 
     private IEnumerator ProcessBlindSpotZoneRoutine()
     {
+        // Commit score state first so game/UI state is deterministic before any load transition starts.
         _processingMidHallwayZone = true;
 
         if (_lastSubmittedChoice.HasValue)
@@ -496,6 +496,7 @@ public class AnomalyLoopManager : MonoBehaviour
 
     private IEnumerator PreloadTargetRoomRoutine(string targetSceneName)
     {
+        // Preload additively and keep roots disabled so handoff stays seamless.
         if (_preloadedRoom != null && _preloadedRoom.IsReady && string.Equals(_preloadedRoom.SceneName, targetSceneName, StringComparison.Ordinal))
         {
             yield break;
@@ -809,6 +810,7 @@ public class AnomalyLoopManager : MonoBehaviour
 
     private void AlignRoomSceneToHallwayMount(string sceneName)
     {
+        // Room entry mapping is cross-wired: hallway NW mount aligns to room SE anchor.
         if (string.IsNullOrWhiteSpace(sceneName))
         {
             return;
@@ -984,6 +986,7 @@ public class AnomalyLoopManager : MonoBehaviour
 
     private void ResetLoopStateForRestart()
     {
+        // Clear transient loop state so a bootstrap reload behaves like a fresh session.
         CorrectCount = 0;
         AttemptCount = 0;
         IsCurrentRoomAnomalous = false;
@@ -1077,24 +1080,6 @@ public class AnomalyLoopManager : MonoBehaviour
         }
     }
 
-    private bool TryResolveCurrentRoomFromLoadedScenes()
-    {
-        RoomLoopSceneContext[] contexts = FindObjectsByType<RoomLoopSceneContext>(FindObjectsInactive.Include);
-        if (contexts.Length == 0)
-        {
-            _currentContext = null;
-            _currentRoomSceneName = string.Empty;
-            IsCurrentRoomAnomalous = false;
-            return false;
-        }
-
-        RoomLoopSceneContext chosen = contexts[0];
-        _currentContext = chosen;
-        _currentRoomSceneName = chosen.gameObject.scene.name;
-        IsCurrentRoomAnomalous = chosen.HasAnomaly;
-        return true;
-    }
-
     private void ResolveRoomContextBySceneName(string sceneName)
     {
         _currentContext = FindSceneContext(sceneName);
@@ -1125,6 +1110,7 @@ public class AnomalyLoopManager : MonoBehaviour
 
     private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        // A single-mode bootstrap load is treated as a hard run reset.
         if (mode == LoadSceneMode.Single && string.Equals(scene.name, _bootstrapSceneName, StringComparison.Ordinal))
         {
             ResetLoopStateForRestart();
@@ -1400,25 +1386,6 @@ public class AnomalyLoopManager : MonoBehaviour
         }
 
         return gameObject.scene.name;
-    }
-
-    private static Transform FindPreloadZoneFrameInScene(string sceneName)
-    {
-        if (string.IsNullOrWhiteSpace(sceneName))
-        {
-            return null;
-        }
-
-        HallwayPreloadZone[] preloadZones = FindObjectsByType<HallwayPreloadZone>(FindObjectsInactive.Include);
-        for (int i = 0; i < preloadZones.Length; i++)
-        {
-            if (string.Equals(preloadZones[i].gameObject.scene.name, sceneName, StringComparison.Ordinal))
-            {
-                return preloadZones[i].transform;
-            }
-        }
-
-        return null;
     }
 
     private static bool HasArmingZoneInScene(string sceneName)

@@ -1,12 +1,13 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class SpinObject : MonoBehaviour
 {
-    [SerializeField] private float spinSpeed = 100f;
+    [FormerlySerializedAs("spinSpeed")]
+    [SerializeField] private float spinSpeedDegreesPerSecond = 100f;
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
-        transform.Rotate(Vector3.up, spinSpeed * Time.deltaTime);
+        transform.Rotate(Vector3.up, spinSpeedDegreesPerSecond * Time.deltaTime);
     }
 }

@@ -1,12 +1,15 @@
-using StarterAssets;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [RequireComponent(typeof(Collider))]
 public class HallwaySymmetryTransportTrigger : MonoBehaviour
 {
-    [SerializeField] private bool useTagCheck;
-    [SerializeField] private string playerTag = "Player";
-    [SerializeField] private BacktrackTrigger backtrackTrigger;
+    [FormerlySerializedAs("useTagCheck")]
+    [SerializeField] private bool usePlayerTagCheck;
+    [FormerlySerializedAs("playerTag")]
+    [SerializeField] private string playerTagName = "Player";
+    [FormerlySerializedAs("backtrackTrigger")]
+    [SerializeField] private BacktrackTrigger backtrackState;
 
     private void Reset()
     {
@@ -16,96 +19,29 @@ public class HallwaySymmetryTransportTrigger : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (!IsPlayer(other))
+        if (!PlayerTriggerUtility.IsPlayer(other, usePlayerTagCheck, playerTagName))
         {
             return;
         }
 
-        if (backtrackTrigger == null)
+        if (backtrackState == null || !backtrackState.TryConsumeBacktrack())
         {
             return;
         }
 
-        if (!backtrackTrigger.backtrackTrigger)
-        {
-            return;
-        }
-
-        backtrackTrigger.backtrackTrigger = false;
-
-        Transform playerTransform = ResolvePlayerTransform(other);
+        Transform playerTransform = PlayerTriggerUtility.ResolvePlayerTransform(other);
         if (playerTransform == null)
         {
             return;
         }
 
-        CharacterController movementController = playerTransform.GetComponent<CharacterController>();
-        if (movementController == null)
-        {
-            movementController = playerTransform.GetComponentInParent<CharacterController>();
-        }
-
+        // Mirror across world origin and rotate 180 to preserve forward movement direction.
         Vector3 mirroredPosition = playerTransform.position;
         mirroredPosition.x = -mirroredPosition.x;
         mirroredPosition.z = -mirroredPosition.z;
 
         Vector3 euler = playerTransform.rotation.eulerAngles;
         Quaternion mirroredRotation = Quaternion.Euler(euler.x, euler.y + 180f, euler.z);
-
-        FirstPersonController controller = playerTransform.GetComponent<FirstPersonController>();
-        if (controller == null)
-        {
-            controller = playerTransform.GetComponentInParent<FirstPersonController>();
-        }
-
-        if (controller != null)
-        {
-            controller.TeleportTo(mirroredPosition, mirroredRotation);
-            return;
-        }
-
-        CharacterController fallbackController = movementController;
-        if (fallbackController == null)
-        {
-            fallbackController = playerTransform.GetComponentInParent<CharacterController>();
-        }
-
-        if (fallbackController == null)
-        {
-            return;
-        }
-
-        bool wasEnabled = fallbackController.enabled;
-        if (wasEnabled)
-        {
-            fallbackController.enabled = false;
-        }
-
-        fallbackController.transform.SetPositionAndRotation(mirroredPosition, mirroredRotation);
-
-        if (wasEnabled)
-        {
-            fallbackController.enabled = true;
-        }
-    }
-
-    private bool IsPlayer(Collider other)
-    {
-        if (useTagCheck)
-        {
-            return other.CompareTag(playerTag);
-        }
-
-        if (other.GetComponentInParent<FirstPersonController>() != null)
-        {
-            return true;
-        }
-
-        return other.GetComponentInParent<CharacterController>() != null;
-    }
-
-    private static Transform ResolvePlayerTransform(Collider other)
-    {
-        return other.transform;
+        PlayerTriggerUtility.TryTeleportPlayer(playerTransform, mirroredPosition, mirroredRotation);
     }
 }

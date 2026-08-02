@@ -1,28 +1,26 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class RoomLoopSceneContext : MonoBehaviour
 {
-    [SerializeField] private bool hasAnomaly;
-    [SerializeField] private Transform northWestConnectionAnchor;
-    [SerializeField] private Transform southEastConnectionAnchor;
+    [FormerlySerializedAs("hasAnomaly")]
+    [SerializeField] private bool roomHasAnomaly;
+    [FormerlySerializedAs("northWestConnectionAnchor")]
+    [SerializeField] private Transform northWestConnectionAnchorTransform;
+    [FormerlySerializedAs("southEastConnectionAnchor")]
+    [SerializeField] private Transform southEastConnectionAnchorTransform;
 
-    public bool HasAnomaly => hasAnomaly;
+    public bool HasAnomaly => roomHasAnomaly;
 
     public Transform GetConnectionAnchor(HallwaySide hallwaySide)
     {
-        switch (hallwaySide)
-        {
-            case HallwaySide.NorthWest:
-                return northWestConnectionAnchor;
-            case HallwaySide.SouthEast:
-                return southEastConnectionAnchor;
-            default:
-                return null;
-        }
+        return hallwaySide == HallwaySide.NorthWest ? northWestConnectionAnchorTransform :
+               hallwaySide == HallwaySide.SouthEast ? southEastConnectionAnchorTransform :
+               null;
     }
 
     public bool HasConnectionAnchors()
     {
-        return northWestConnectionAnchor != null && southEastConnectionAnchor != null;
+        return northWestConnectionAnchorTransform != null && southEastConnectionAnchorTransform != null;
     }
 }

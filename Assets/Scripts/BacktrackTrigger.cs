@@ -1,14 +1,28 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class BacktrackTrigger : MonoBehaviour
 {
-    public bool backtrackTrigger = false;
+    [FormerlySerializedAs("backtrackTrigger")]
+    [SerializeField] private bool isBacktrackPending;
 
-    void OnTriggerEnter(Collider other)
+    // One-shot consume pattern avoids repeated symmetry teleports while staying inside trigger volume.
+    public bool TryConsumeBacktrack()
+    {
+        if (!isBacktrackPending)
+        {
+            return false;
+        }
+
+        isBacktrackPending = false;
+        return true;
+    }
+
+    private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))
         {
-            backtrackTrigger = true;
+            isBacktrackPending = true;
         }
     }
 }

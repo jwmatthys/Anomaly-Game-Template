@@ -1,11 +1,15 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class AnomalyLoopDebugOverlay : MonoBehaviour
 {
-    [SerializeField] private bool showOnStart = true;
+    [FormerlySerializedAs("showOnStart")]
+    [SerializeField] private bool showOverlayOnStart = true;
     [SerializeField] private KeyCode toggleKey = KeyCode.F3;
-    [SerializeField] private Vector2 panelPosition = new(12f, 12f);
-    [SerializeField] private Vector2 panelSize = new(310f, 220f);
+    [FormerlySerializedAs("panelPosition")]
+    [SerializeField] private Vector2 overlayPanelPosition = new(12f, 12f);
+    [FormerlySerializedAs("panelSize")]
+    [SerializeField] private Vector2 overlayPanelSize = new(310f, 220f);
 
     private bool _isVisible;
     private GUIStyle _panelStyle;
@@ -13,7 +17,7 @@ public class AnomalyLoopDebugOverlay : MonoBehaviour
 
     private void Awake()
     {
-        _isVisible = showOnStart;
+        _isVisible = showOverlayOnStart;
         BuildStyles();
     }
 
@@ -37,7 +41,7 @@ public class AnomalyLoopDebugOverlay : MonoBehaviour
             BuildStyles();
         }
 
-        Rect rect = new(panelPosition.x, panelPosition.y, panelSize.x, panelSize.y);
+        Rect rect = new(overlayPanelPosition.x, overlayPanelPosition.y, overlayPanelSize.x, overlayPanelSize.y);
         GUILayout.BeginArea(rect, _panelStyle);
 
         AnomalyLoopManager manager = AnomalyLoopManager.Instance;
@@ -59,6 +63,7 @@ public class AnomalyLoopDebugOverlay : MonoBehaviour
 
     private void BuildStyles()
     {
+        // Build once and reuse to keep IMGUI allocations predictable.
         _panelStyle = new GUIStyle(GUI.skin.box)
         {
             alignment = TextAnchor.UpperLeft,
@@ -77,6 +82,7 @@ public class AnomalyLoopDebugOverlay : MonoBehaviour
 
     private static Texture2D MakePanelTexture(Color color)
     {
+        // Single-color texture is enough for a translucent IMGUI panel backdrop.
         Texture2D texture = new(1, 1);
         texture.SetPixel(0, 0, color);
         texture.Apply();

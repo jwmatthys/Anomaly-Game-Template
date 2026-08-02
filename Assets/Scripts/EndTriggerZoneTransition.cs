@@ -1,18 +1,23 @@
 using System.Collections;
-using StarterAssets;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using UnityEngine.Serialization;
 
 [RequireComponent(typeof(Collider))]
 public class EndTriggerZoneTransition : MonoBehaviour
 {
-    [SerializeField] private string bootstrapSceneName = "Bootstrap Hallway";
-    [SerializeField, Min(0f)] private float delaySeconds = 1.25f;
+    [FormerlySerializedAs("bootstrapSceneName")]
+    [SerializeField] private string bootstrapSceneNameOverride = "Bootstrap Hallway";
+    [FormerlySerializedAs("delaySeconds")]
+    [SerializeField, Min(0f)] private float transitionDelaySeconds = 1.25f;
     [SerializeField, Min(0f)] private float fadeDurationSeconds = 0.85f;
-    [SerializeField, Min(0f)] private float triggerArmDelaySeconds = 0.2f;
-    [SerializeField] private bool useTagCheck;
-    [SerializeField] private string playerTag = "Player";
+    [FormerlySerializedAs("triggerArmDelaySeconds")]
+    [SerializeField, Min(0f)] private float armDelaySeconds = 0.2f;
+    [FormerlySerializedAs("useTagCheck")]
+    [SerializeField] private bool usePlayerTagCheck;
+    [FormerlySerializedAs("playerTag")]
+    [SerializeField] private string playerTagName = "Player";
 
     private static bool _sequenceRunning;
     private bool _isArmed;
@@ -31,12 +36,12 @@ public class EndTriggerZoneTransition : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (_sequenceRunning || !_isArmed || !IsPlayer(other))
+        if (_sequenceRunning || !_isArmed || !PlayerTriggerUtility.IsPlayer(other, usePlayerTagCheck, playerTagName))
         {
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(bootstrapSceneName) || !Application.CanStreamedLevelBeLoaded(bootstrapSceneName))
+        if (string.IsNullOrWhiteSpace(bootstrapSceneNameOverride) || !Application.CanStreamedLevelBeLoaded(bootstrapSceneNameOverride))
         {
             return;
         }
@@ -45,14 +50,15 @@ public class EndTriggerZoneTransition : MonoBehaviour
 
         GameObject runnerObject = new("EndTriggerZoneTransitionRunner");
         TransitionRunner runner = runnerObject.AddComponent<TransitionRunner>();
-        runner.Begin(bootstrapSceneName, delaySeconds, fadeDurationSeconds);
+        runner.Begin(bootstrapSceneNameOverride, transitionDelaySeconds, fadeDurationSeconds);
     }
 
+    // Arming after scene load avoids false positive trigger-enter calls from spawn overlap.
     private IEnumerator ArmAfterDelayRoutine()
     {
-        if (triggerArmDelaySeconds > 0f)
+        if (armDelaySeconds > 0f)
         {
-            yield return new WaitForSeconds(triggerArmDelaySeconds);
+            yield return new WaitForSeconds(armDelaySeconds);
         }
         else
         {
@@ -60,21 +66,6 @@ public class EndTriggerZoneTransition : MonoBehaviour
         }
 
         _isArmed = true;
-    }
-
-    private bool IsPlayer(Collider other)
-    {
-        if (useTagCheck)
-        {
-            return other.CompareTag(playerTag);
-        }
-
-        if (other.GetComponentInParent<FirstPersonController>() != null)
-        {
-            return true;
-        }
-
-        return other.GetComponentInParent<CharacterController>() != null;
     }
 
     private sealed class TransitionRunner : MonoBehaviour
@@ -93,6 +84,7 @@ public class EndTriggerZoneTransition : MonoBehaviour
             StartCoroutine(RunRoutine());
         }
 
+        // Runner persists across scene reload so the fade can continue seamlessly.
         private IEnumerator RunRoutine()
         {
             EnsureFadeOverlay();
@@ -123,6 +115,7 @@ public class EndTriggerZoneTransition : MonoBehaviour
 
         private static IEnumerator DestroyPersistentLoopManagerRoutine()
         {
+            // Fully disable old persistent manager before scene reload to avoid duplicate startup loads.
             AnomalyLoopManager manager = FindAnyObjectByType<AnomalyLoopManager>();
             if (manager != null)
             {
@@ -133,6 +126,7 @@ public class EndTriggerZoneTransition : MonoBehaviour
             }
         }
 
+        // Overlay is built lazily to avoid scene setup dependencies.
         private void EnsureFadeOverlay()
         {
             if (_fadeGroup != null)
