@@ -273,7 +273,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 1, z: 0}
-  m_LocalScale: {x: 20, y: 2, z: 20}
+  m_LocalScale: {x: 22, y: 2, z: 22}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -290,9 +290,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 34388774b5a4dd14d92f195e4d6f0247, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MainRoomChoiceArmingZone
-  loopManager: {fileID: 0}
-  useTagCheck: 0
-  playerTag: Player
+  loopManagerOverride: {fileID: 0}
+  usePlayerTagCheck: 0
+  playerTagName: Player
 --- !u!65 &203065505
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2510,9 +2510,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bd04bf69d619a4b4bae7706965460a4c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PulseScale
-  pulseSpeed: 1.5
-  minScale: 1
-  maxScale: 1.2
+  pulseSpeedHz: 1.5
+  minimumScale: 1
+  maximumScale: 1.2
 --- !u!1001 &1501119299
 PrefabInstance:
   m_ObjectHideFlags: 0
